@@ -896,3 +896,10 @@ window.editCompletedMemo = editCompletedMemo;
 window.deleteCompletedRequest = deleteCompletedRequest;
 window.hideCompletedDetailModal = hideCompletedDetailModal;
 window.toggleFollowCompleted = toggleFollowCompleted;
+
+// ===== PWA =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js');
+  });
+}
