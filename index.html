@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>納期管理</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- アイコン -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- 外部CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-zinc-950 text-white min-h-screen pb-20" id="appBody">
+
+<!-- ================= メインページ ================= -->
+<div id="mainPage">
+
+  <!-- ヘッダー -->
+  <div class="bg-zinc-900 p-4 flex items-center justify-between sticky top-0 z-10 border-b border-zinc-700">
+    <h1 class="text-2xl font-bold">納期管理</h1>
+    <div class="flex items-center gap-4">
+      <button onclick="showCapacityModal()" 
+              class="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors">
+        <i class="fas fa-sliders-h"></i>
+        <span class="text-sm">キャパ調整</span>
+      </button>
+      <div onclick="showIncomeModal()" class="text-right cursor-pointer">
+        <div class="text-xs text-zinc-400">今月の受注</div>
+        <div id="monthlyIncome" class="text-2xl font-bold text-emerald-400">¥0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 緊急TODO -->
+  <div class="px-4 mt-4">
+    <div class="urgent-todo-box" onclick="showPage('todoPage')">
+      <div class="urgent-todo-title flex items-center gap-2">
+        <i class="fas fa-exclamation-triangle text-amber-400"></i>
+        緊急TODO
+      </div>
+      <div id="urgentTodos" class="space-y-1"></div>
+    </div>
+  </div>
+
+  <!-- 月表示 + ブロックピッカー -->
+  <div class="px-4 pt-4">
+    <div class="flex items-center justify-between mb-3">
+      <button onclick="prevMonth()" class="text-3xl px-4 text-zinc-400 active:scale-95">‹</button>
+      <div id="monthTitle" class="text-2xl font-semibold"></div>
+      <button onclick="nextMonth()" class="text-3xl px-4 text-zinc-400 active:scale-95">›</button>
+    </div>
+
+<!-- ブロック横タブ -->
+<div class="flex bg-zinc-900 rounded-3xl p-1 mb-4">
+  <button onclick="switchBlock('upper')" id="tab-upper"
+          class="flex-1 py-3.5 rounded-3xl font-medium transition-all">上旬</button>
+  <button onclick="switchBlock('middle')" id="tab-middle"
+          class="flex-1 py-3.5 rounded-3xl font-medium transition-all">中旬</button>
+  <button onclick="switchBlock('lower')" id="tab-lower"
+          class="flex-1 py-3.5 rounded-3xl font-medium transition-all">下旬</button>
+</div>
+
+<!-- 3ブロックサマリー -->
+<div id="blockSummary" class="block-summary mb-6"></div>  </div>
+
+  <!-- 選択中のブロックメインエリア -->
+  <div id="currentBlock" class="px-4"></div>
+
+  <!-- 下部ナビ -->
+  <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-zinc-900 border-t border-zinc-700">
+    <div class="flex gap-3">
+      <button onclick="showRegisterModal()" 
+              class="flex-1 bg-gradient-to-r from-blue-500 to-violet-500 py-5 rounded-3xl font-bold active:scale-95 transition-all flex items-center justify-center gap-2">
+        <i class="fas fa-plus"></i> このブロックに登録
+      </button>
+
+  <button onclick="showTagManagement()" 
+          class="w-14 bg-zinc-800 rounded-3xl flex items-center justify-center active:scale-95 transition-all">
+    <i class="fas fa-tags text-xl"></i>
+  </button>
+
+  <button onclick="showPage('todoPage')" 
+          class="w-14 bg-zinc-800 rounded-3xl flex items-center justify-center active:scale-95 transition-all">
+    <i class="fas fa-check text-xl"></i>
+  </button>
+
+  <button onclick="showPage('completedPage')" 
+          class="w-14 bg-zinc-800 rounded-3xl flex items-center justify-center active:scale-95 transition-all">
+    <i class="fas fa-history text-xl"></i>
+  </button>
+</div>  </div>
+
+</div>
+
+<!-- ================= TODOページ ================= -->
+<div id="todoPage" class="hidden">
+  <div class="bg-zinc-900 p-4 flex items-center justify-between sticky top-0 z-10 border-b border-zinc-700">
+    <div class="text-xl font-bold">TODOリスト</div>
+    <button onclick="showPage('mainPage')" class="text-zinc-400 px-4 py-1">戻る</button>
+  </div>
+  <div class="p-4">
+    <button onclick="addTodo()" 
+            class="w-full bg-white text-black py-4 rounded-3xl font-bold active:scale-95 transition-all">
+      ＋ TODOを追加
+    </button>
+  </div>
+  <div class="px-4">
+    <div id="todoList" class="todo-container space-y-3"></div>
+  </div>
+</div>
+
+<!-- ================= 納品履歴ページ ================= -->
+<div id="completedPage" class="hidden">
+  <div class="bg-zinc-900 p-4 flex items-center justify-between sticky top-0 z-10 border-b border-zinc-700">
+    <div class="text-xl font-bold">納品履歴</div>
+    <button onclick="showPage('mainPage')" class="text-zinc-400 px-4 py-1">戻る</button>
+  </div>
+  <div class="p-4">
+    <div id="completedList" class="space-y-3"></div>
+  </div>
+</div>
+
+<!-- ================= 依頼登録モーダル ================= -->
+<div id="registerModal" class="hidden fixed inset-0 bg-black/80 flex items-end z-50">
+  <div class="bg-zinc-900 w-full rounded-t-3xl p-6 modal max-h-[85vh] overflow-auto">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">新規依頼登録</h2>
+      <button onclick="hideRegisterModal()" class="text-4xl text-zinc-400">×</button>
+    </div>
+    <div class="space-y-6">
+      <input id="title" type="text" placeholder="依頼タイトル" class="w-full bg-zinc-800 rounded-2xl px-5 py-4 text-lg">
+      <div>
+        <label class="block text-xs text-zinc-400 mb-2">タグ</label>
+        <select id="tagSelect" class="w-full bg-zinc-800 rounded-2xl px-5 py-4 text-lg" onchange="updateRegisterCalc()"></select>
+      </div>
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs text-zinc-400 mb-1">年</label>
+          <input id="regYear" type="number" onchange="updateRegisterCalc()" class="w-full bg-zinc-800 rounded-2xl px-5 py-4">
+        </div>
+        <div>
+          <label class="block text-xs text-zinc-400 mb-1">月</label>
+          <input id="regMonth" type="number" min="1" max="12" onchange="updateRegisterCalc()" class="w-full bg-zinc-800 rounded-2xl px-5 py-4">
+        </div>
+        <div>
+          <label class="block text-xs text-zinc-400 mb-1">ブロック</label>
+          <select id="regBlock" class="w-full bg-zinc-800 rounded-2xl px-5 py-4" onchange="updateRegisterCalc()">
+            <option value="upper">上旬</option>
+            <option value="middle">中旬</option>
+            <option value="lower">下旬</option>
+          </select>
+        </div>
+      </div>
+      <input id="price" type="number" placeholder="金額（任意）" class="w-full bg-zinc-800 rounded-2xl px-5 py-4 text-lg">
+      <div id="calcResult" class="hidden bg-emerald-900/30 border border-emerald-700 rounded-3xl p-5">
+        <div id="predictedUsage" class="text-xl font-bold text-emerald-300"></div>
+      </div>
+      <div id="registerWarning" class="hidden bg-red-900/50 border border-red-700 text-red-300 rounded-3xl p-4 text-center font-medium">
+        このブロックは余裕無しです<br>登録できません
+      </div>
+      <button id="registerButton" onclick="registerRequest()" 
+              class="w-full bg-white text-black py-5 rounded-3xl font-bold text-lg active:scale-95">登録する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= タグ管理モーダル ================= -->
+<div id="tagModal" class="hidden fixed inset-0 bg-black/80 flex items-end z-50">
+  <div class="bg-zinc-900 w-full rounded-t-3xl p-6 modal max-h-[85vh] overflow-auto">
+    <h2 class="text-2xl font-bold mb-4">タグ管理</h2>
+    <button onclick="addNewTag()" class="w-full bg-zinc-800 py-4 rounded-3xl font-medium mb-6">＋ 新しいタグを追加</button>
+    <div id="tagList" class="space-y-4"></div>
+    <button onclick="hideTagModal()" class="mt-8 w-full py-4 text-zinc-400">閉じる</button>
+  </div>
+</div>
+
+<!-- ================= 依頼詳細モーダル（未納品用・元に戻しました） ================= -->
+<div id="detailModal" class="hidden fixed inset-0 bg-black/80 flex items-end z-50">
+  <div class="bg-zinc-900 w-full rounded-t-3xl p-6 modal">
+    <h2 id="detailTitle" class="text-2xl font-bold mb-6"></h2>
+    <div id="detailInfo" class="space-y-4 text-sm"></div>
+
+<input id="detailPrice" type="number" placeholder="金額（任意）" 
+       class="w-full bg-zinc-800 rounded-2xl px-5 py-4 text-lg my-6">
+
+<div class="flex gap-3">
+  <button onclick="completeCurrentTask()" 
+          class="flex-1 bg-emerald-600 py-4 rounded-3xl font-bold active:scale-95">納品完了</button>
+  <button onclick="showMoveModal()" 
+          class="flex-1 bg-amber-600 py-4 rounded-3xl font-bold active:scale-95">ブロックを移動</button>
+</div>
+
+<button onclick="deleteCurrentRequest()" 
+        class="mt-4 w-full bg-red-600 py-4 rounded-3xl font-bold active:scale-95">
+  この依頼を削除
+</button>
+
+<button onclick="hideDetailModal()" 
+        class="mt-6 w-full text-zinc-400 py-3">閉じる</button>  </div>
+</div>
+
+<!-- ================= 納品履歴専用詳細モーダル（スマホ見切れ修正版） ================= -->
+<div id="completedDetailModal" class="hidden fixed inset-0 bg-black/80 flex items-end z-50">
+  <div class="bg-zinc-900 w-full rounded-t-3xl max-h-[90vh] flex flex-col modal">
+    <!-- ヘッダー部分 -->
+    <div class="p-6 border-b border-zinc-700 flex-shrink-0">
+      <h2 id="completedDetailTitle" class="text-2xl font-bold"></h2>
+    </div>
+
+<!-- スクロール可能な本体 -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+  <div id="completedDetailInfo" class="space-y-4 text-sm"></div>
+
+  <!-- メモ表示エリア -->
+  <div>
+    <div class="text-xs text-zinc-400 mb-2">メモ</div>
+    <div id="completedMemoDisplay" 
+         class="bg-zinc-800 rounded-2xl p-5 text-sm min-h-[120px] leading-relaxed"></div>
+  </div>
+</div>
+
+<!-- ボタンエリア（固定） -->
+<div class="p-6 border-t border-zinc-700 flex-shrink-0">
+  <div class="grid grid-cols-1 gap-3">
+    <button onclick="editCompletedTitle()" 
+            class="bg-zinc-800 hover:bg-zinc-700 py-4 rounded-3xl font-medium active:scale-95 transition-all flex items-center justify-center gap-2">
+      <span class="text-lg"></span> タイトルを編集
+    </button>
+    <button onclick="editCompletedMemo()" 
+            class="bg-zinc-800 hover:bg-zinc-700 py-4 rounded-3xl font-medium active:scale-95 transition-all flex items-center justify-center gap-2">
+      <span class="text-lg"></span> メモを編集
+    </button>
+    <button onclick="deleteCompletedRequest()" 
+            class="bg-red-600 py-4 rounded-3xl font-bold active:scale-95 flex items-center justify-center gap-2">
+      <span class="text-lg"></span> この履歴を削除
+    </button>
+  </div>
+
+  <button onclick="hideCompletedDetailModal()" 
+          class="mt-8 w-full text-zinc-400 py-3">閉じる</button>
+</div>  </div>
+</div>
+  
+
+<!-- ================= 依頼移動モーダル ================= -->
+<div id="moveModal" class="hidden fixed inset-0 bg-black/80 flex items-end z-50">
+  <div class="bg-zinc-900 w-full rounded-t-3xl p-6 modal max-h-[85vh] overflow-auto">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">依頼を移動</h2>
+      <button onclick="hideMoveModal()" class="text-4xl text-zinc-400">×</button>
+    </div>
+    <div class="space-y-6">
+      <div class="grid grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs text-zinc-400 mb-1">年</label>
+          <input id="moveYear" type="number" onchange="updateMoveCalc()" class="w-full bg-zinc-800 rounded-2xl px-5 py-4">
+        </div>
+        <div>
+          <label class="block text-xs text-zinc-400 mb-1">月</label>
+          <input id="moveMonth" type="number" min="1" max="12" onchange="updateMoveCalc()" class="w-full bg-zinc-800 rounded-2xl px-5 py-4">
+        </div>
+        <div>
+          <label class="block text-xs text-zinc-400 mb-1">ブロック</label>
+          <select id="moveBlock" class="w-full bg-zinc-800 rounded-2xl px-5 py-4" onchange="updateMoveCalc()">
+            <option value="upper">上旬</option>
+            <option value="middle">中旬</option>
+            <option value="lower">下旬</option>
+          </select>
+        </div>
+      </div>
+      <div id="moveCalcResult" class="hidden bg-emerald-900/30 border border-emerald-700 rounded-3xl p-5">
+        <div id="movePredictedUsage" class="text-xl font-bold text-emerald-300"></div>
+      </div>
+      <div id="moveWarning" class="hidden bg-red-900/50 border border-red-700 text-red-300 rounded-3xl p-4 text-center font-medium">
+        移動先ブロックは余裕無しです
+      </div>
+      <button id="moveButton" onclick="performMove()" 
+              class="w-full bg-white text-black py-5 rounded-3xl font-bold text-lg active:scale-95">
+        移動する
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= キャパシティ調整モーダル ================= -->
+<div id="capacityModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+  <div class="bg-zinc-900 w-full max-w-md mx-auto rounded-3xl max-h-[90vh] flex flex-col modal-content overflow-hidden">
+    <div id="capacityContent" class="flex-1 overflow-y-auto capacity-content p-6"></div>
+    <div class="p-6 border-t border-zinc-700">
+      <button onclick="hideCapacityModal()" class="w-full py-4 bg-zinc-700 rounded-3xl font-medium">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 収入モーダル ================= -->
+<div id="incomeModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+  <div class="bg-zinc-900 w-full max-w-md mx-4 rounded-3xl p-6">
+    <h2 class="text-xl font-bold mb-4 text-center">今月の受注金額</h2>
+    <div id="incomeContent" class="text-5xl font-bold text-emerald-400 text-center py-10"></div>
+    <button onclick="hideIncomeModal()" class="w-full bg-zinc-700 py-4 rounded-3xl font-medium">閉じる</button>
+  </div>
+</div>
+
+<!-- ================= TODO編集モーダル ================= -->
+<div id="todoEditModal" class="hidden fixed inset-0 bg-black/80 flex items-end z-50">
+  <div class="bg-zinc-900 w-full rounded-t-3xl p-6 modal max-h-[90vh] overflow-auto">
+    <h2 class="text-xl font-bold mb-4">TODO編集</h2>
+    <div class="space-y-6">
+      <input id="editTitle" type="text" placeholder="タイトル" class="w-full bg-zinc-800 rounded-2xl px-5 py-4 text-lg">
+      <textarea id="editMemo" placeholder="メモ（任意）" rows="3" class="w-full bg-zinc-800 rounded-2xl px-5 py-4"></textarea>
+      <div>
+        <label class="block text-xs text-zinc-400 mb-2">期限</label>
+        <input id="editDate" type="date" class="w-full bg-zinc-800 rounded-2xl px-5 py-4">
+      </div>
+      <div>
+        <label class="block text-xs text-zinc-400 mb-2">優先度</label>
+        <div class="flex gap-2">
+          <button type="button" onclick="setPriority(1)" id="prio-1" class="flex-1 py-3 rounded-2xl text-sm font-medium priority-btn">低</button>
+          <button type="button" onclick="setPriority(2)" id="prio-2" class="flex-1 py-3 rounded-2xl text-sm font-medium priority-btn">中</button>
+          <button type="button" onclick="setPriority(3)" id="prio-3" class="flex-1 py-3 rounded-2xl text-sm font-medium priority-btn">高</button>
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-8">
+      <button onclick="saveTodoEdit()" class="flex-1 bg-emerald-600 py-4 rounded-3xl font-bold">保存</button>
+      <button onclick="deleteTodo()" class="flex-1 bg-red-600 py-4 rounded-3xl font-bold">削除</button>
+    </div>
+    <button onclick="closeTodoEdit()" class="mt-6 w-full text-zinc-400 py-3">閉じる</button>
+  </div>
+</div>
+
+<!-- ================= データ管理モーダル ================= -->
+<div id="dataModal" class="hidden fixed inset-0 bg-black/80 flex items-end z-50">
+  <div class="bg-zinc-900 w-full rounded-t-3xl p-6 modal max-h-[85vh] overflow-auto">
+    <h2 class="text-2xl font-bold mb-6">データ管理</h2>
+    <div class="space-y-6">
+      <button onclick="exportData()" class="w-full bg-emerald-600 py-5 rounded-3xl font-bold flex items-center justify-center gap-2">
+        <i class="fas fa-download"></i> データエクスポート
+      </button>
+      <div>
+        <label class="block text-xs text-zinc-400 mb-2">データインポート</label>
+        <input id="importFile" type="file" accept=".json" class="hidden">
+        <button onclick="document.getElementById('importFile').click()" 
+                class="w-full bg-amber-600 py-5 rounded-3xl font-bold flex items-center justify-center gap-2">
+          <i class="fas fa-upload"></i> JSONファイルを選択
+        </button>
+      </div>
+      <div id="importPreview" class="import-preview hidden"></div>
+      <div class="flex gap-3">
+        <button onclick="performImport('replace')" id="importReplaceBtn" class="flex-1 hidden bg-red-600 py-4 rounded-3xl font-bold">全データ上書き</button>
+        <button onclick="performImport('merge')" id="importMergeBtn" class="flex-1 hidden bg-violet-600 py-4 rounded-3xl font-bold">データをマージ</button>
+      </div>
+    </div>
+    <button onclick="hideDataModal()" class="mt-8 w-full py-4 text-zinc-400">閉じる</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
+
